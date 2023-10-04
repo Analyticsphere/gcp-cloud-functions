@@ -60,27 +60,6 @@ def update_box_file(box_client, box_folder_id, box_file_id, file_contents, file_
     updated_file = box_client.file(box_file_id).update_contents_with_stream(stream)
     print(f'File "{file_name}" has been updated')
 
-def main(event, context):
-    """Triggered by a change to a Cloud Storage bucket.
-    Args:
-         event (dict): Event payload.
-         context (google.cloud.functions.Context): Metadata for the event.
-    """
-    file_object = event
-    print(f"File object: {file_object}")
-    print(f"Processing file: {file_object['name']}.")
-
-    if file_to_be_exported(file_object['name']):
-        box_token = json.loads(get_box_token())
-        box_client = get_box_client(box_token)
-        box_folder_id, box_file_id = extract_box_folder_and_file_ids(file_object['name'])
-
-        if box_folder_id and box_file_id:
-            file_contents = download_file_contents(file_object['bucket'], file_object['name'])
-            update_box_file(box_client, box_folder_id, box_file_id, file_contents, file_object['name'])
-        else:
-            print("Unable to extract Box folder and file IDs from the filename.")
-
 def get_box_token(version_id="latest"):
     '''Get Box token from Google Secret Manager.'''
     client = secretmanager.SecretManagerServiceClient()
@@ -101,3 +80,24 @@ def get_box_client(box_token):
     access_token = service_account_auth.authenticate_instance()
     service_account_client = Client(service_account_auth)
     return service_account_client
+
+def main(event, context):
+    """Triggered by a change to a Cloud Storage bucket.
+    Args:
+         event (dict): Event payload.
+         context (google.cloud.functions.Context): Metadata for the event.
+    """
+    file_object = event
+    print(f"File object: {file_object}")
+    print(f"Processing file: {file_object['name']}.")
+
+    if file_to_be_exported(file_object['name']):
+        box_token = json.loads(get_box_token())
+        box_client = get_box_client(box_token)
+        box_folder_id, box_file_id = extract_box_folder_and_file_ids(file_object['name'])
+
+        if box_folder_id and box_file_id:
+            file_contents = download_file_contents(file_object['bucket'], file_object['name'])
+            update_box_file(box_client, box_folder_id, box_file_id, file_contents, file_object['name'])
+        else:
+            print("Unable to extract Box folder and file IDs from the filename.")
